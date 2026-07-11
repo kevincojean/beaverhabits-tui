@@ -3,6 +3,8 @@
 Terminal UI for [BeaverHabits](https://beaverhabits.com/) habit tracker. Displays a tagged 5-day habit grid from a configured API endpoint.
 
 > **Status**: Read-only utility. Views habit data from your server — no create, edit, or delete operations.
+>
+> **Stability**: Versions tagged with `rc` (release candidate) are not production-ready. They work and are usable, but should be considered "ok, not proven stable".
 
 ## Install
 
