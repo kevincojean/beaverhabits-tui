@@ -1,0 +1,36 @@
+[project]
+name = "beaverhabits-tui"
+dynamic = ["version"]
+description = "Terminal UI for BeaverHabits habit tracker"
+requires-python = ">=3.10"
+dependencies = [
+    "httpx==0.28.1",
+    "inject==5.3.0",
+    "pydantic==2.10.4",
+    "pymonad==2.4.0",
+    "python-dotenv==1.0.1",
+    "rich==15.0.0",
+    "typer==0.24.2",
+]
+
+[project.optional-dependencies]
+test = ["pytest==8.0.0", "pytest-xdist==3.8.0"]
+
+[dependency-groups]
+test = ["pytest==8.0.0", "pytest-xdist==3.8.0"]
+
+[project.scripts]
+beaverhabits = "beaverhabits_tui.app:app"
+
+[build-system]
+requires = ["setuptools>=61.0", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools-scm]
+version_scheme = "no-guess-dev"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
