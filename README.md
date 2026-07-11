@@ -2,6 +2,8 @@
 
 Terminal UI for [BeaverHabits](https://beaverhabits.com/) habit tracker. Displays a tagged 5-day habit grid from a configured API endpoint.
 
+> **Status**: Read-only utility. Views habit data from your server — no create, edit, or delete operations.
+
 ## Install
 
 ```bash
@@ -20,7 +22,21 @@ Requires Python >= 3.10.
 
 ## Configure
 
-Set your server URL and authentication headers:
+Configuration is loaded from a JSON file at `~/.config/com.kevincojean.beaverhabits-tui/config.json`. This file is **mandatory**.  
+You may add *optional* extra headers, depending on your needs and where you deployed a beaverhabits instance.  
+
+```json
+{
+  "beaverhabits": {
+    "url": "https://habits.example.com",
+    "headers": {
+      "Authorization": "Basic {base64-encoded - username:password}"
+    }
+  }
+}
+```
+
+Environment variables are **optional overrides** — if set, they take precedence over the config file:
 
 ```bash
 export BEAVERHABITS_URL="https://habits.example.com"
@@ -28,21 +44,6 @@ export BEAVERHABITS_HEADERS="Authorization:Bearer <token>;X-Debug:1"
 ```
 
 Headers are semicolon-separated `Key:Value` pairs.
-
-Config file at `~/.config/com.kevincojean.beaverhabits-tui/config.json`:
-
-```json
-{
-  "beaverhabits": {
-    "url": "https://habits.example.com",
-    "headers": {
-      "Authorization": "Bearer <token>"
-    }
-  }
-}
-```
-
-Env vars take precedence over the config file.
 
 Supports `{{ VAR }}` interpolation for values referencing other env vars.
 

@@ -15,14 +15,14 @@ class HabitsClient:
         self.http_client = http_client
 
     def list_habits(self, status: str = "active") -> Either[Error, list[HabitLite]]:
-        result = self.http_client.get("/api/habits", params={"status": status})
+        result = self.http_client.get("/api/v1/habits", params={"status": status})
         return result.either(
             lambda error: Left(error),
             lambda response: self._parse_list_habits(response),
         )
 
     def get_habit(self, id: str) -> Either[Error, HabitDetail]:
-        result = self.http_client.get(f"/api/habits/{id}")
+        result = self.http_client.get(f"/api/v1/habits/{id}")
         return result.either(
             lambda error: Left(error),
             lambda response: self._parse_get_habit(response),

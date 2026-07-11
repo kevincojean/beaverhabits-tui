@@ -13,9 +13,10 @@ def configure_injector(binder: inject.Binder) -> None:
     config = config_result.either(lambda _: None, lambda r: r)
     bh_config = config["beaverhabits"]
 
-    binder.bind(HttpClient, HttpClient(bh_config["url"], bh_config["headers"]))
-    binder.bind(HabitsClient, HabitsClient(binder.provider[HttpClient]))
-    binder.bind(UserClient, UserClient(binder.provider[HttpClient]))
+    http_client = HttpClient(bh_config["url"], bh_config["headers"])
+    binder.bind(HttpClient, http_client)
+    binder.bind(HabitsClient, HabitsClient(http_client))
+    binder.bind(UserClient, UserClient(http_client))
 
 
 from beaverhabits_tui.client.cli.typer.commands import app  # noqa: E402, F401

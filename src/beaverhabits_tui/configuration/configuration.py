@@ -58,33 +58,31 @@ def _deep_merge(base: dict, override: dict) -> dict:
 
 
 def load_config() -> Either[Error, AppConfig]:
-    url = os.environ.get("BEAVERHABITS_URL")
-    if not url:
-        return Left(Error("BEAVERHABITS_URL environment variable is not set"))
-
-    raw_headers = os.environ.get("BEAVERHABITS_HEADERS", "")
-
-    parsed_headers = _parse_headers(raw_headers)
-    if parsed_headers.is_left():
-        return parsed_headers  # type: ignore[return-value]
-    headers = parsed_headers.value
-
-    env_config: dict[str, Any] = {
-        "beaverhabits": {
-            "url": url,
-            "headers": headers,
-        }
-    }
-
+    # Config file is the primary mandatory source
     config_file_path = Path.home() / ".config" / "com.kevincojean.beaverhabits-tui" / "config.json"
+    if not config_file_path.exists():
+        return Left(Error(f"Config file not found at {config_file_path}"))
+    try:
+        with open(config_file_path) as f:
+            file_config: dict[str, Any] = json.load(f)
+    except (json.JSONDecodeError, OSError) as e:
+        return Left(Error(f"Failed to read config file: {e}"))
 
-    file_config: dict[str, Any] = {}
-    if config_file_path.exists():
-        try:
-            with open(config_file_path) as f:
-                file_config = json.load(f)
-        except (json.JSONDecodeError, OSError) as e:
-            return Left(Error(f"Failed to read config file: {e}"))
+    # Env vars are optional overrides (if set, they take precedence over file config)
+    env_config: dict[str, Any] = {}
+    url = os.environ.get("BEAVERHABITS_URL")
+    if url:
+        raw_headers = os.environ.get("BEAVERHABITS_HEADERS", "")
+        parsed_headers = _parse_headers(raw_headers)
+        if parsed_headers.is_left():
+            return parsed_headers  # type: ignore[return-value]
+        headers = parsed_headers.value
+        env_config = {
+            "beaverhabits": {
+                "url": url,
+                "headers": headers,
+            }
+        }
 
     merged = _deep_merge(file_config, env_config)
 
