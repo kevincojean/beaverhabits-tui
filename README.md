@@ -29,7 +29,20 @@ export BEAVERHABITS_HEADERS="Authorization:Bearer <token>;X-Debug:1"
 
 Headers are semicolon-separated `Key:Value` pairs.
 
-Config file at `~/.config/com.kevincojean.beaverhabits-tui/config.json` supports the same structure. Env vars take precedence.
+Config file at `~/.config/com.kevincojean.beaverhabits-tui/config.json`:
+
+```json
+{
+  "beaverhabits": {
+    "url": "https://habits.example.com",
+    "headers": {
+      "Authorization": "Bearer <token>"
+    }
+  }
+}
+```
+
+Env vars take precedence over the config file.
 
 Supports `{{ VAR }}` interpolation for values referencing other env vars.
 
