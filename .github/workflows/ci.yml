@@ -26,15 +26,36 @@ jobs:
           enable-cache: true
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --group test
 
       - name: Run tests
         id: tests
-        run: uv run infra/test_runner.py test
-        continue-on-error: ${{ contains(github.ref_name, 'rc') }}
-
-      - name: Verify release tests passed
-        if: ${{ !contains(github.ref_name, 'rc') && steps.tests.outcome == 'failure' }}
         run: |
-          echo "::error::Tests failed on release tag ${{ github.ref_name }}"
-          exit 1
+          EXIT=0
+          uv run infra/test_runner.py test || EXIT=$?
+          echo "exit_code=$EXIT" >> $GITHUB_OUTPUT
+
+      - name: Validate test result
+        if: steps.tests.outputs.exit_code != '0'
+        env:
+          EXIT_CODE: ${{ steps.tests.outputs.exit_code }}
+        run: |
+          if [ -z "$EXIT_CODE" ]; then
+            echo "::error::Failed to capture test exit code"
+            exit 1
+          fi
+          if ${{ contains(github.ref_name, 'rc') }}; then
+            case "$EXIT_CODE" in
+              1|5)
+                echo "::warning::RC tag: test issues tolerated (pytest exit code $EXIT_CODE)"
+                exit 0
+                ;;
+              *)
+                echo "::error::Infrastructure failure on RC tag (exit code $EXIT_CODE)"
+                exit 1
+                ;;
+            esac
+          else
+            echo "::error::Tests failed on release tag ${{ github.ref_name }} (exit code $EXIT_CODE)"
+            exit 1
+          fi

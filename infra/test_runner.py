@@ -100,11 +100,15 @@ def test(
 
     combined_output = result.stdout + result.stderr
 
-    if result.returncode != 0 and "Failed to spawn" in combined_output:
+    spawn_failed = any(
+        marker in combined_output
+        for marker in ("Failed to spawn", "No module named")
+    )
+    if result.returncode != 0 and spawn_failed:
         console.print()
         console.print("[bold red]✗ Failed to run pytest[/bold red]")
         console.print(combined_output)
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=2)
 
     summary = _parse_pytest_summary(combined_output)
 
