@@ -30,9 +30,11 @@ jobs:
 
       - name: Run tests
         id: tests
+        env:
+          BEAVERHABITS_CONFIG_PATH: /tmp/com.kevincojean.beaverhabits-tui/config.json
         run: |
           EXIT=0
-          uv run infra/test_runner.py test || EXIT=$?
+          uv run infra/ccli test || EXIT=$?
           echo "exit_code=$EXIT" >> $GITHUB_OUTPUT
 
       - name: Validate test result

@@ -48,9 +48,13 @@ The `renderer.truncateGraphemes` option controls how habit names are truncated:
 Environment variables are **optional overrides** — if set, they take precedence over the config file:
 
 ```bash
+export BEAVERHABITS_CONFIG_PATH="/path/to/config.json"
 export BEAVERHABITS_URL="https://habits.example.com"
 export BEAVERHABITS_HEADERS="Authorization:Bearer <token>;X-Debug:1"
 ```
+
+`BEAVERHABITS_CONFIG_PATH` overrides the default config file location (`~/.config/com.kevincojean.beaverhabits-tui/config.json`).
+`BEAVERHABITS_URL` and `BEAVERHABITS_HEADERS` override the corresponding values in the config file.
 
 Headers are semicolon-separated `Key:Value` pairs.
 

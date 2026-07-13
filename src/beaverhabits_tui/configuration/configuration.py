@@ -63,8 +63,12 @@ def _deep_merge(base: dict, override: dict) -> dict:
 
 
 def load_config() -> Either[Error, AppConfig]:
-    # Config file is the primary mandatory source
-    config_file_path = Path.home() / ".config" / "com.kevincojean.beaverhabits-tui" / "config.json"
+    config_file_path = Path(
+        os.environ.get(
+            "BEAVERHABITS_CONFIG_PATH",
+            Path.home() / ".config" / "com.kevincojean.beaverhabits-tui" / "config.json",
+        )
+    )
     if not config_file_path.exists():
         return Left(Error(f"Config file not found at {config_file_path}"))
     try:

@@ -8,6 +8,8 @@
 # ///
 from __future__ import annotations
 
+import json
+import os
 import re
 import subprocess
 import time
@@ -31,23 +33,42 @@ app = typer.Typer(
 
 
 def _parse_pytest_summary(output: str) -> dict[str, int]:
-    summary_pattern = re.compile(
-        r"=+\s+"
-        r"(?P<passed>\d+)\s+passed"
-        r"(?:,\s*(?P<failed>\d+)\s+failed)?"
-        r"(?:,\s*(?P<warnings>\d+)\s+warning)?"
-        r".*?=+\s*$",
+    match = re.search(
+        r"^=+\s+(?=\d)"
+        r"(.+?)"
+        r"\s+in\s+[\d.]+s"
+        r"\s*=+\s*$",
+        output,
         re.MULTILINE,
     )
-    match = summary_pattern.search(output)
     if not match:
         return {}
 
-    return {
-        key: int(value)
-        for key, value in match.groupdict().items()
-        if value is not None
-    }
+    allowed = {"passed", "failed", "xfailed", "xpassed", "warnings", "error", "errors"}
+    summary: dict[str, int] = {}
+    for entry in re.finditer(r"(\d+)\s+(\w+)", match.group(1)):
+        label = entry.group(2)
+        if label in allowed:
+            summary[label] = int(entry.group(1))
+    return summary
+
+
+def _ensure_config() -> None:
+    config_path = os.environ.get("BEAVERHABITS_CONFIG_PATH")
+    if not config_path:
+        return
+    config_file = Path(config_path)
+    if config_file.exists():
+        return
+    config_file.parent.mkdir(parents=True, exist_ok=True)
+    config_file.write_text(
+        json.dumps(
+            {
+                "beaverhabits": {"url": "https://example.com", "headers": {}},
+                "renderer": {"truncateGraphemes": True},
+            }
+        )
+    )
 
 
 @app.command()
@@ -66,6 +87,7 @@ def test(
     ] = None,
 ) -> None:
     """Run the test suite with rich output."""
+    _ensure_config()
     test_path = "tests"
     if filter == "unit":
         test_path = "tests/unit"
