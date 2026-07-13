@@ -1,0 +1,140 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "typer==0.24.2",
+#     "rich==15.0.0",
+# ]
+# ///
+from __future__ import annotations
+
+import re
+import subprocess
+import time
+from typing import Annotated
+
+import typer
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+
+console = Console()
+
+app = typer.Typer(
+    help="Infrastructure CLI for beaverhabits-tui",
+    no_args_is_help=True,
+)
+
+
+def _parse_pytest_summary(output: str) -> dict[str, int]:
+    summary_pattern = re.compile(
+        r"=+\s+"
+        r"(?P<passed>\d+)\s+passed"
+        r"(?:,\s*(?P<failed>\d+)\s+failed)?"
+        r"(?:,\s*(?P<warnings>\d+)\s+warning)?"
+        r".*?=+\s*$",
+        re.MULTILINE,
+    )
+    match = summary_pattern.search(output)
+    if not match:
+        return {}
+
+    return {
+        key: int(value)
+        for key, value in match.groupdict().items()
+        if value is not None
+    }
+
+
+@app.command()
+def test(
+    verbose: Annotated[
+        bool,
+        typer.Option("--verbose", "-v", help="Enable verbose pytest output"),
+    ] = False,
+    filter: Annotated[
+        str | None,
+        typer.Option(
+            "--filter",
+            "-f",
+            help="Test filter: 'unit', 'e2e', or path (default: all)",
+        ),
+    ] = None,
+) -> None:
+    """Run the test suite with rich output."""
+    test_path = "tests"
+    if filter == "unit":
+        test_path = "tests/unit"
+    elif filter == "e2e":
+        test_path = "tests/e2e"
+    elif filter is not None:
+        test_path = filter
+
+    pytest_args = ["uv", "run", "pytest", test_path]
+    if verbose:
+        pytest_args.append("-v")
+
+    console.print(
+        Panel.fit(
+            f"[bold cyan]Running tests:[/bold cyan] {' '.join(pytest_args)}",
+            border_style="cyan",
+        )
+    )
+
+    start_time = time.time()
+    result = subprocess.run(pytest_args, capture_output=True, text=True)
+    duration = time.time() - start_time
+
+    combined_output = result.stdout + result.stderr
+
+    summary = _parse_pytest_summary(combined_output)
+
+    table = Table(title="Test Results", show_header=True, expand=False)
+    table.add_column("Metric", style="cyan")
+    table.add_column("Count", justify="right")
+
+    if summary:
+        if "passed" in summary:
+            table.add_row("Passed", f"[green]{summary['passed']}[/green]")
+        if "failed" in summary:
+            table.add_row("Failed", f"[red]{summary['failed']}[/red]")
+        if "warnings" in summary:
+            table.add_row("Warnings", f"[yellow]{summary['warnings']}[/yellow]")
+    else:
+        table.add_row("Status", "[red]Could not parse test results[/red]")
+
+    table.add_row("Duration", f"{duration:.2f}s")
+
+    console.print()
+    console.print(table)
+
+    if result.returncode == 0:
+        console.print("\n[bold green]✓ All tests passed[/bold green]")
+    else:
+        console.print("\n[bold red]✗ Tests failed[/bold red]")
+        if not verbose:
+            console.print("[dim]Run with --verbose for detailed output[/dim]")
+            console.print()
+            console.print(combined_output)
+
+    raise typer.Exit(code=result.returncode)
+
+
+@app.command()
+def version() -> None:
+    """Show version information."""
+    result = subprocess.run(
+        ["git", "describe", "--tags", "--abbrev=0"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode == 0:
+        pkg_version = result.stdout.strip()
+    else:
+        pkg_version = "dev"
+
+    console.print(f"beaverhabits-tui [cyan]{pkg_version}[/cyan]")
+
+
+if __name__ == "__main__":
+    app()

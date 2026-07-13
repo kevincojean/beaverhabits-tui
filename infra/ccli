@@ -1,0 +1,55 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "typer==0.24.2",
+#     "rich==15.0.0",
+# ]
+# ///
+from __future__ import annotations
+
+import subprocess
+import sys
+from pathlib import Path
+
+import typer
+from rich.console import Console
+
+console = Console()
+
+app = typer.Typer(
+    help="Infrastructure CLI for beaverhabits-tui",
+    no_args_is_help=True,
+)
+
+INFRA_DIR = Path(__file__).resolve().parent
+
+
+@app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
+def test(ctx: typer.Context) -> None:
+    """Run the test suite (delegates to test_runner.py)."""
+    args = ctx.args[1:] if ctx.args and ctx.args[0] == "test" else ctx.args
+    result = subprocess.run(
+        ["uv", "run", str(INFRA_DIR / "test_runner.py"), "test"] + args,
+    )
+    raise typer.Exit(code=result.returncode)
+
+
+@app.command()
+def version() -> None:
+    """Show version information."""
+    result = subprocess.run(
+        ["git", "describe", "--tags", "--abbrev=0"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode == 0:
+        pkg_version = result.stdout.strip()
+    else:
+        pkg_version = "dev"
+
+    console.print(f"beaverhabits-tui [cyan]{pkg_version}[/cyan]")
+
+
+if __name__ == "__main__":
+    app()
