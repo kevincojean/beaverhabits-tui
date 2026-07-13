@@ -73,11 +73,11 @@ def _habit_line(habit: HabitDetail, date_strings: list[str]) -> str:
     line = f"{name:<{NAME_WIDTH}}"
     for ds in date_strings:
         done = record_map.get(ds, False)
-        char = "✓" if done else "·"
+        char = "✓" if done else "✘"
         block = char.center(COLUMN_WIDTH)
         if done:
             block = block.replace(char, f"[bold green]{char}[/bold green]")
         else:
-            block = block.replace(char, f"[dim]{char}[/dim]")
+            block = block.replace(char, f"[red]{char}[/red]")
         line += block
     return line

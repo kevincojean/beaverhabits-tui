@@ -18,7 +18,7 @@ class TestDefaultView:
         assert "Mon" in result.stdout or "Tue" in result.stdout
         assert "#" in result.stdout
         assert "✓" in result.stdout
-        assert "·" in result.stdout
+        assert "✘" in result.stdout
 
     @pytest.mark.xfail(reason="Requires configured API endpoint with untagged habits")
     def test_given_untagged_habits_when_run_then_listed_without_header(self):
@@ -62,7 +62,7 @@ class TestDefaultView:
         }
         result = run_cli([], env=env)
         assert result.returncode == 0
-        assert "·" in result.stdout
+        assert "✘" in result.stdout
 
     @pytest.mark.xfail(reason="Requires API endpoint returning HTTP 401")
     def test_given_401_when_run_then_not_authenticated_message(self):
