@@ -14,8 +14,13 @@ class BeaverHabitsConfig(TypedDict):
     headers: dict[str, str]
 
 
+class RendererConfig(TypedDict):
+    truncateGraphemes: bool
+
+
 class AppConfig(TypedDict):
     beaverhabits: BeaverHabitsConfig
+    renderer: RendererConfig
 
 
 def _parse_headers(raw: str) -> Either[Error, dict[str, str]]:
@@ -98,6 +103,14 @@ def load_config() -> Either[Error, AppConfig]:
     if not isinstance(final_headers, dict):
         return Left(Error("Config 'headers' must be a dictionary"))
 
+    renderer = merged.get("renderer", {})
+    if not isinstance(renderer, dict):
+        return Left(Error("Config 'renderer' must be a dictionary"))
+
+    truncate_graphemes = renderer.get("truncateGraphemes", True)
+    if not isinstance(truncate_graphemes, bool):
+        return Left(Error("Config 'renderer.truncateGraphemes' must be a boolean"))
+
     try:
         final_url = _interpolate_env(final_url)
         final_headers = {k: _interpolate_env(v) for k, v in final_headers.items()}
@@ -109,6 +122,9 @@ def load_config() -> Either[Error, AppConfig]:
             beaverhabits=BeaverHabitsConfig(
                 url=final_url,
                 headers=final_headers,
-            )
+            ),
+            renderer=RendererConfig(
+                truncateGraphemes=truncate_graphemes,
+            ),
         )
     )

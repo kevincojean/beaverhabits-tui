@@ -34,9 +34,16 @@ You may add *optional* extra headers, depending on your needs and where you depl
     "headers": {
       "Authorization": "Basic {base64-encoded - username:password}"
     }
+  },
+  "renderer": {
+    "truncateGraphemes": true
   }
 }
 ```
+
+The `renderer.truncateGraphemes` option controls how habit names are truncated:
+- `true` (default): Truncates based on display width, ensuring grid alignment with emoji and wide characters
+- `false`: Truncates based on character count, which may cause misalignment with emoji
 
 Environment variables are **optional overrides** — if set, they take precedence over the config file:
 

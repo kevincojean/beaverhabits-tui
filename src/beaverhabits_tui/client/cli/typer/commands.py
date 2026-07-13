@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from typing import final
 
+import inject
 import typer
 from rich.console import Console
 
 from beaverhabits_tui.client.http.httpx.http_client import HttpClient
 from beaverhabits_tui.client.http.httpx.habits_client import HabitsClient
 from beaverhabits_tui.configuration.configuration import load_config
+from beaverhabits_tui.services.grapheme_truncator import GraphemeTruncator
 from beaverhabits_tui.views.rich.render import default_view
 
 console = Console()
@@ -20,8 +22,6 @@ class Commands:
     def default_cmd(self) -> None:
         # Lazy import to avoid circular dependency with app.py (T12)
         from beaverhabits_tui.app import configure_injector  # noqa: PLC0415
-
-        import inject  # noqa: PLC0415
 
         inject.clear_and_configure(configure_injector)
 
@@ -53,7 +53,8 @@ class Commands:
             if detail_result.is_right():
                 details.append(detail_result.either(lambda _: None, lambda r: r))
 
-        output = default_view(details)
+        truncator = inject.instance(GraphemeTruncator)
+        output = default_view(details, truncator)
         console.print(output)
 
 

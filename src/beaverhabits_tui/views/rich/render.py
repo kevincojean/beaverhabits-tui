@@ -5,15 +5,17 @@ from collections import defaultdict
 
 from rich.table import Table
 from rich.text import Text
+from rich import box
 
 from beaverhabits_tui.models.habit import HabitDetail
+from beaverhabits_tui.services.grapheme_truncator import GraphemeTruncator
 
 __all__ = ["default_view"]
 
 NAME_WIDTH = 35
 
 
-def default_view(habits: list[HabitDetail]) -> Table:
+def default_view(habits: list[HabitDetail], truncator: GraphemeTruncator) -> Table:
     """Render a tagged 5-day habit grid as a Rich Table.
 
     Returns a Table object suitable for ``rich.console.Console.print``.
@@ -27,6 +29,8 @@ def default_view(habits: list[HabitDetail]) -> Table:
         show_lines=False,
         padding=(0, 2),
         expand=False,
+        header_style="",
+        box=box.SIMPLE,
     )
 
     table.add_column("Habit", style="", width=NAME_WIDTH, no_wrap=True)
@@ -67,22 +71,26 @@ def default_view(habits: list[HabitDetail]) -> Table:
         )
         for habit in tagged[tag]:
             record_maps[habit.id] = {r.data.day: r.data.done for r in habit.records}
-            table.add_row(*_habit_row(habit, date_strings, record_maps[habit.id]))
+            table.add_row(*_habit_row(habit, date_strings, record_maps[habit.id], truncator))
 
     if untagged:
         if tagged:
             table.add_row(Text(""), Text(""), Text(""), Text(""), Text(""), Text(""))
         for habit in untagged:
             record_maps[habit.id] = {r.data.day: r.data.done for r in habit.records}
-            table.add_row(*_habit_row(habit, date_strings, record_maps[habit.id]))
+            table.add_row(*_habit_row(habit, date_strings, record_maps[habit.id], truncator))
 
     return table
 
 
 def _habit_row(
-    habit: HabitDetail, date_strings: list[str], record_map: dict[str, bool]
+    habit: HabitDetail,
+    date_strings: list[str],
+    record_map: dict[str, bool],
+    truncator: GraphemeTruncator,
 ) -> list[Text]:
-    row: list[Text] = [Text(habit.name)]
+    name = truncator.truncate(habit.name, NAME_WIDTH)
+    row: list[Text] = [Text(truncator.pad(name, NAME_WIDTH))]
     for ds in date_strings:
         done = record_map.get(ds, False)
         if done:
