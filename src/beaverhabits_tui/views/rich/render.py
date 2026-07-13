@@ -3,34 +3,36 @@ from __future__ import annotations
 import datetime
 from collections import defaultdict
 
-from rich.cells import cell_len, set_cell_size
+from rich.table import Table
+from rich.text import Text
 
 from beaverhabits_tui.models.habit import HabitDetail
 
 __all__ = ["default_view"]
 
-COLUMN_WIDTH = 8
 NAME_WIDTH = 35
-NAME_PADDING = 2
 
 
-def default_view(habits: list[HabitDetail]) -> str:
-    """Render a tagged 5-day habit grid using Rich markup.
+def default_view(habits: list[HabitDetail]) -> Table:
+    """Render a tagged 5-day habit grid as a Rich Table.
 
-    Returns a string with Rich markup tags suitable for
-    ``rich.console.Console.print``.
+    Returns a Table object suitable for ``rich.console.Console.print``.
     """
     today = datetime.date.today()
     dates = [today - datetime.timedelta(days=i) for i in range(4, -1, -1)]
 
-    lines: list[str] = []
+    table = Table(
+        show_header=True,
+        show_edge=False,
+        show_lines=False,
+        padding=(0, 2),
+        expand=False,
+    )
 
-    header = " " * (NAME_WIDTH + NAME_PADDING)
+    table.add_column("Habit", style="", width=NAME_WIDTH, no_wrap=True)
     for d in dates:
         label = d.strftime("%a %d")
-        header += f"{label:^{COLUMN_WIDTH}}"
-    lines.append(header)
-    lines.append("")
+        table.add_column(label, justify="center", width=8, no_wrap=True)
 
     tagged: dict[str, list[HabitDetail]] = defaultdict(list)
     untagged: list[HabitDetail] = []
@@ -49,41 +51,42 @@ def default_view(habits: list[HabitDetail]) -> str:
     untagged.sort(key=sort_key)
 
     date_strings = [d.isoformat() for d in dates]
+    record_maps: dict[str, dict[str, bool]] = {}
 
     tag_keys = sorted(tagged)
     for i, tag in enumerate(tag_keys):
         if i > 0:
-            lines.append("")
-        lines.append(f"[blue]#{tag}[/blue]")
+            table.add_row(Text(""), Text(""), Text(""), Text(""), Text(""), Text(""))
+        table.add_row(
+            Text(f"#{tag}", style="blue"),
+            Text(""),
+            Text(""),
+            Text(""),
+            Text(""),
+            Text(""),
+        )
         for habit in tagged[tag]:
-            lines.append(_habit_line(habit, date_strings))
+            record_maps[habit.id] = {r.data.day: r.data.done for r in habit.records}
+            table.add_row(*_habit_row(habit, date_strings, record_maps[habit.id]))
 
     if untagged:
         if tagged:
-            lines.append("")
+            table.add_row(Text(""), Text(""), Text(""), Text(""), Text(""), Text(""))
         for habit in untagged:
-            lines.append(_habit_line(habit, date_strings))
+            record_maps[habit.id] = {r.data.day: r.data.done for r in habit.records}
+            table.add_row(*_habit_row(habit, date_strings, record_maps[habit.id]))
 
-    return "\n".join(lines)
+    return table
 
 
-def _habit_line(habit: HabitDetail, date_strings: list[str]) -> str:
-    record_map = {r.data.day: r.data.done for r in habit.records}
-    
-    if cell_len(habit.name) > NAME_WIDTH:
-        name = set_cell_size(habit.name, NAME_WIDTH - 1) + "…"
-    else:
-        name = habit.name
-    
-    line = set_cell_size(name, NAME_WIDTH) + " " * NAME_PADDING
-    
+def _habit_row(
+    habit: HabitDetail, date_strings: list[str], record_map: dict[str, bool]
+) -> list[Text]:
+    row: list[Text] = [Text(habit.name)]
     for ds in date_strings:
         done = record_map.get(ds, False)
-        char = "✓" if done else "✘"
-        block = char.center(COLUMN_WIDTH)
         if done:
-            block = block.replace(char, f"[bold green]{char}[/bold green]")
+            row.append(Text("✓", style="bold green"))
         else:
-            block = block.replace(char, f"[red]{char}[/red]")
-        line += block
-    return line
+            row.append(Text("✘", style="red"))
+    return row
