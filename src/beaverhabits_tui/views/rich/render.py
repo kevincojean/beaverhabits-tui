@@ -3,12 +3,15 @@ from __future__ import annotations
 import datetime
 from collections import defaultdict
 
+from rich.cells import cell_len, set_cell_size
+
 from beaverhabits_tui.models.habit import HabitDetail
 
 __all__ = ["default_view"]
 
 COLUMN_WIDTH = 8
 NAME_WIDTH = 35
+NAME_PADDING = 2
 
 
 def default_view(habits: list[HabitDetail]) -> str:
@@ -22,11 +25,11 @@ def default_view(habits: list[HabitDetail]) -> str:
 
     lines: list[str] = []
 
-    header = " " * NAME_WIDTH
+    header = " " * (NAME_WIDTH + NAME_PADDING)
     for d in dates:
         label = d.strftime("%a %d")
         header += f"{label:^{COLUMN_WIDTH}}"
-    lines.append(header.rstrip())
+    lines.append(header)
     lines.append("")
 
     tagged: dict[str, list[HabitDetail]] = defaultdict(list)
@@ -66,11 +69,14 @@ def default_view(habits: list[HabitDetail]) -> str:
 
 def _habit_line(habit: HabitDetail, date_strings: list[str]) -> str:
     record_map = {r.data.day: r.data.done for r in habit.records}
-    if len(habit.name) > NAME_WIDTH:
-        name = habit.name[: NAME_WIDTH - 1] + "…"
+    
+    if cell_len(habit.name) > NAME_WIDTH:
+        name = set_cell_size(habit.name, NAME_WIDTH - 1) + "…"
     else:
         name = habit.name
-    line = f"{name:<{NAME_WIDTH}}"
+    
+    line = set_cell_size(name, NAME_WIDTH) + " " * NAME_PADDING
+    
     for ds in date_strings:
         done = record_map.get(ds, False)
         char = "✓" if done else "✘"
