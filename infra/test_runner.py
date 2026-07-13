@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 import subprocess
 import time
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -19,6 +20,9 @@ from rich.panel import Panel
 from rich.table import Table
 
 console = Console()
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PYTHON_BIN = PROJECT_ROOT / ".venv" / "bin" / "python"
 
 app = typer.Typer(
     help="Infrastructure CLI for beaverhabits-tui",
@@ -70,22 +74,37 @@ def test(
     elif filter is not None:
         test_path = filter
 
-    pytest_args = ["uv", "run", "pytest", test_path]
+    pytest_args = [str(PYTHON_BIN), "-m", "pytest", test_path]
     if verbose:
         pytest_args.append("-v")
 
+    display_args = f".venv/bin/python -m pytest {test_path}"
+    if verbose:
+        display_args += " -v"
+
     console.print(
         Panel.fit(
-            f"[bold cyan]Running tests:[/bold cyan] {' '.join(pytest_args)}",
+            f"[bold cyan]Running tests:[/bold cyan] {display_args}",
             border_style="cyan",
         )
     )
 
     start_time = time.time()
-    result = subprocess.run(pytest_args, capture_output=True, text=True)
+    result = subprocess.run(
+        pytest_args,
+        capture_output=True,
+        text=True,
+        cwd=str(PROJECT_ROOT),
+    )
     duration = time.time() - start_time
 
     combined_output = result.stdout + result.stderr
+
+    if result.returncode != 0 and "Failed to spawn" in combined_output:
+        console.print()
+        console.print("[bold red]✗ Failed to run pytest[/bold red]")
+        console.print(combined_output)
+        raise typer.Exit(code=1)
 
     summary = _parse_pytest_summary(combined_output)
 
